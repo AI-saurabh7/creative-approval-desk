@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creative Approval Desk</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
+  :root{
+    --bg:#eef1f6; --surf:#ffffff; --surf2:#f3f5f9; --surf3:#e7eaf1;
+    --bdr:rgba(15,23,42,.09); --bdr2:rgba(15,23,42,.15);
+    --txt:#3c4257; --muted:#7c8598; --dim:#525a70; --heading:#161b26;
+    --submitter:#2f6fed; --approver:#7c4fe0; --admin:#c9820f; --subapprover:#0e9488;
+    --ok:#1a9463; --bad:#d64545; --pending:#c9820f;
+    --fh:'Syne',sans-serif; --fb:'DM Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--txt);font-family:var(--fb);font-size:13.5px;-webkit-font-smoothing:antialiased;min-height:100vh;}
+  button,input,textarea,select{font-family:var(--fb);}
+  ::placeholder{color:var(--muted);}
+
+  /* ── Login screen ── */
+  #screenLogin{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{width:100%;max-width:380px;background:var(--surf);border:1px solid var(--bdr);border-radius:16px;padding:34px 30px;box-shadow:0 4px 24px rgba(15,23,42,.06);}
+  .login-mark{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,var(--submitter),var(--approver));display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;color:#fff;font-size:17px;margin-bottom:18px;}
+  .login-card h1{font-family:var(--fh);font-size:19px;font-weight:800;color:var(--heading);margin-bottom:4px;}
+  .login-card p{font-size:12px;color:var(--muted);margin-bottom:24px;line-height:1.5;}
+  .fld{margin-bottom:14px;}
+  .fld label{display:block;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px;}
+  .fld input,.fld textarea,.fld select{width:100%;background:var(--surf2);border:1px solid var(--bdr2);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;outline:none;}
+  .fld input:focus,.fld textarea:focus,.fld select:focus{border-color:var(--submitter);}
+  .btn{width:100%;background:var(--submitter);border:none;color:#fff;font-weight:700;font-size:13px;padding:11px;border-radius:9px;cursor:pointer;transition:opacity .15s;}
+  .btn:hover{opacity:.9;}
+  .btn-ghost{background:var(--surf2);border:1px solid var(--bdr2);color:var(--txt);}
+  .login-err{background:rgba(214,69,69,.1);border:1px solid rgba(214,69,69,.3);color:var(--bad);font-size:12px;padding:10px 12px;border-radius:9px;margin-bottom:14px;line-height:1.5;display:none;}
+  .login-err.show{display:block;}
+  .demo-hint{margin-top:20px;padding-top:16px;border-top:1px solid var(--bdr);font-size:10.5px;color:var(--muted);line-height:1.7;}
+  .demo-hint b{color:var(--dim);}
+  .demo-hint button{background:none;border:none;color:var(--submitter);font-size:10.5px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;}
+
+  /* ── App shell (post-login) ── */
+  #appShell{display:none;max-width:1100px;margin:0 auto;padding:24px 22px 60px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--bdr);}
+  .tb-left{display:flex;align-items:center;gap:12px;}
+  .tb-mark{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-weight:800;color:#fff;font-size:13px;}
+  .tb-title{font-family:var(--fh);font-size:16px;font-weight:800;color:var(--heading);}
+  .tb-sub{font-size:10.5px;color:var(--muted);margin-top:1px;}
+  .tb-right{display:flex;align-items:center;gap:12px;}
+  .role-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:5px 11px;border-radius:20px;}
+  .role-badge.submitter{background:rgba(47,111,237,.15);color:var(--submitter);}
+  .role-badge.approver{background:rgba(124,79,224,.15);color:var(--approver);}
+  .role-badge.admin{background:rgba(201,130,15,.15);color:var(--admin);}
+  .role-badge.subapprover{background:rgba(14,148,136,.15);color:var(--subapprover);}
+  .user-email{font-size:12px;color:var(--dim);}
+  .logout-btn{background:var(--surf2);border:1px solid var(--bdr2);color:var(--muted);font-size:11px;padding:6px 12px;border-radius:8px;cursor:pointer;}
+  .logout-btn:hover{border-color:var(--bad);color:var(--bad);}
+
+  .panel{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;overflow:hidden;margin-bottom:18px;box-shadow:0 2px 12px rgba(15,23,42,.04);}
+  .ph{padding:15px 18px;border-bottom:1px solid var(--bdr);}
+  .ph-t{font-family:var(--fh);font-size:14px;font-weight:700;color:var(--heading);}
+  .ph-s{font-size:11px;color:var(--muted);margin-top:2px;}
+
+  /* status stepper */
+  .stepper{display:flex;align-items:center;gap:4px;margin-top:6px;}
+  .step{display:flex;align-items:center;gap:5px;}
+  .step-dot{width:7px;height:7px;border-radius:50%;background:var(--bdr2);}
+  .step-dot.done{background:var(--ok);}
+  .step-dot.pending{background:var(--pending);}
+  .step-dot.bad{background:var(--bad);}
+  .step-line{width:20px;height:1px;background:var(--bdr2);}
+  .step-lbl{font-size:9.5px;color:var(--muted);font-weight:600;}
+
+  .status-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:10.5px;font-weight:700;white-space:nowrap;}
+  .status-chip.submitted{background:rgba(201,130,15,.14);color:var(--pending);}
+  .status-chip.assigned{background:rgba(14,148,136,.14);color:var(--subapprover);}
+  .status-chip.approved{background:rgba(26,148,99,.14);color:var(--ok);}
+  .status-chip.rejected{background:rgba(214,69,69,.14);color:var(--bad);}
+
+  .sub-card{border-bottom:1px solid var(--bdr);padding:10px 16px;}
+  .sub-card:last-child{border-bottom:none;}
+  .sub-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px;}
+  .sub-name{font-size:12.5px;font-weight:700;color:var(--heading);}
+  .sub-adv{font-size:10.5px;color:var(--muted);margin-top:1px;}
+  .sub-meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:10px;color:var(--muted);}
+  .sub-meta a{color:var(--submitter);text-decoration:none;}
+  .sub-meta a:hover{text-decoration:underline;}
+  .reject-row{margin-top:7px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:rgba(214,69,69,.07);border:1px solid rgba(214,69,69,.18);border-radius:8px;padding:7px 8px 7px 11px;}
+  .reject-reason{font-size:10.5px;color:#a83232;}
+  .resubmit-btn{flex-shrink:0;background:var(--surf);border:1px solid rgba(214,69,69,.3);color:var(--bad);font-size:10.5px;font-weight:700;padding:5px 11px;border-radius:7px;cursor:pointer;white-space:nowrap;transition:all .15s;}
+  .resubmit-btn:hover{background:var(--bad);border-color:var(--bad);color:#fff;}
+
+  .act-row{display:flex;gap:6px;margin-top:8px;}
+  .act-btn{flex:1;border:none;border-radius:7px;padding:7px;font-size:11px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+  .act-btn:hover{opacity:.88;}
+  .act-approve{background:var(--ok);color:#06281a;}
+  .act-reject{background:rgba(214,69,69,.15);color:var(--bad);border:1px solid rgba(214,69,69,.3);}
+
+  .empty{padding:44px 20px;text-align:center;}
+  .empty-ico{font-size:28px;margin-bottom:10px;opacity:.35;}
+  .empty-t{font-family:var(--fh);font-size:13px;color:var(--muted);}
+
+  /* form */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:18px;}
+  .form-grid .fld.full{grid-column:1/-1;}
+  .form-grid.compact-form{gap:10px;padding:14px 16px;}
+  .compact-form .fld{margin-bottom:0;}
+  .compact-form .fld label{font-size:9.5px;margin-bottom:4px;}
+  .compact-form .fld input,.compact-form .fld select,.compact-form .fld textarea{padding:7px 10px;font-size:12px;}
+  .compact-form .btn{padding:9px;font-size:12.5px;}
+  .fld label .req{color:var(--bad);margin-left:2px;}
+
+  /* required creative dimensions — checkbox grid */
+  .dim-box{background:var(--surf2);border:1px solid var(--bdr2);border-radius:9px;padding:10px 12px;max-height:230px;overflow-y:auto;}
+  .dim-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px 14px;}
+  .dim-item{display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:11.5px;color:var(--txt);cursor:pointer;border-radius:6px;line-height:1.3;}
+  .dim-item:hover{background:rgba(15,23,42,.04);}
+  .dim-item input[type=checkbox]{width:14px;height:14px;flex-shrink:0;accent-color:var(--submitter);cursor:pointer;}
+  .dim-other{display:flex;align-items:center;gap:8px;padding:6px 4px 2px;margin-top:2px;border-top:1px solid var(--bdr);}
+  .dim-empty{grid-column:1/-1;color:var(--muted);font-size:11.5px;padding:6px 4px;font-style:italic;}
+  .dim-other span{font-size:11.5px;color:var(--txt);flex-shrink:0;}
+  .dim-other input[type=text]{flex:1;background:var(--surf);border:1px solid var(--bdr2);border-radius:7px;padding:6px 9px;font-size:11.5px;color:var(--txt);outline:none;min-width:0;}
+  .dim-other input[type=text]:focus{border-color:var(--submitter);}
+  @media(max-width:640px){ .dim-grid{grid-template-columns:1fr;} }
+
+  /* admin user table */
+  .utbl{width:100%;border-collapse:collapse;}
+  .utbl th{padding:10px 18px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;border-bottom:1px solid var(--bdr);}
+  .utbl td{padding:11px 18px;font-size:12.5px;border-bottom:1px solid rgba(15,23,42,.04);}
+  .utbl tr:last-child td{border-bottom:none;}
+  .utbl tr:hover td{background:rgba(15,23,42,.02);}
+  .role-select{background:var(--surf2);border:1px solid var(--bdr2);border-radius:7px;padding:5px 9px;color:var(--txt);font-size:11.5px;cursor:pointer;}
+  .revoke-btn{background:none;border:1px solid var(--bdr2);color:var(--muted);font-size:10.5px;padding:5px 10px;border-radius:7px;cursor:pointer;}
+  .revoke-btn:hover{border-color:var(--bad);color:var(--bad);}
+
+  .scroll-list{max-height:340px;overflow-y:auto;background:var(--surf2);}
+  .scroll-list::-webkit-scrollbar{width:8px;}
+  .scroll-list::-webkit-scrollbar-track{background:transparent;}
+  .scroll-list::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:8px;}
+  .scroll-list::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+  .scroll-list .sub-card{background:var(--surf);}
+  .scroll-table-wrap{max-height:380px;overflow-y:auto;}
+  .scroll-table-wrap::-webkit-scrollbar{width:8px;}
+  .scroll-table-wrap::-webkit-scrollbar-track{background:transparent;}
+  .scroll-table-wrap::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:8px;}
+  .scroll-table-wrap table thead th{position:sticky;top:0;background:var(--surf);z-index:1;}
+  .inline-status{margin:8px 0 4px;}
+  .pending-row{display:flex;align-items:center;gap:14px;}
+  .pending-left{flex:1;min-width:0;}
+  .pending-mid{flex-shrink:0;}
+  .pending-actions{display:flex;gap:6px;flex-shrink:0;}
+  .assigned-tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:var(--subapprover);background:rgba(14,148,136,.1);padding:3px 9px;border-radius:20px;white-space:nowrap;}
+  .mini-act{width:32px;height:32px;border-radius:8px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;flex-shrink:0;}
+  .mini-act:hover{opacity:.85;}
+  .mini-approve{background:var(--ok);color:#06281a;}
+  .mini-assign{background:var(--subapprover);color:#fff;}
+  .mini-reject{background:rgba(214,69,69,.15);color:var(--bad);border:1px solid rgba(214,69,69,.3);}
+  .view-details-btn{background:none;border:1px solid var(--bdr2);color:var(--submitter);font-size:10.5px;font-weight:600;padding:4px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;}
+  .view-details-btn:hover{background:var(--surf2);}
+
+  /* ── Details modal ── */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:200;align-items:center;justify-content:center;padding:20px;}
+  #checklistOverlay{z-index:250;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{width:100%;max-width:440px;background:var(--surf);border:1px solid var(--bdr);border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(15,23,42,.2);}
+  .modal-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bdr);}
+  .modal-title{font-family:var(--fh);font-size:13.5px;font-weight:700;color:var(--heading);}
+  .modal-close{background:none;border:1px solid var(--bdr2);color:var(--muted);width:26px;height:26px;border-radius:7px;cursor:pointer;}
+  .modal-close:hover{border-color:var(--bad);color:var(--bad);}
+  .modal-body{padding:16px 18px 20px;}
+  .mrow{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid rgba(15,23,42,.05);font-size:12px;}
+  .mrow:last-child{border-bottom:none;}
+  .mrow-lbl{color:var(--muted);flex-shrink:0;}
+  .mrow-val{color:var(--heading);font-weight:600;text-align:right;}
+  .mrow-val a{color:var(--submitter);}
+
+  .chk-scroll{max-height:52vh;overflow-y:auto;padding:6px 18px;}
+  .chk-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(15,23,42,.05);}
+  .chk-row:last-child{border-bottom:none;}
+  .chk-num{flex-shrink:0;width:20px;font-size:10.5px;color:var(--muted);font-weight:700;}
+  .chk-text{flex:1;font-size:11.5px;color:var(--txt);cursor:help;border-bottom:1px dotted var(--bdr2);width:fit-content;}
+  .chk-opts{flex-shrink:0;display:flex;gap:6px;}
+  .chk-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--bdr2);background:var(--surf);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;}
+  .chk-btn:hover{border-color:var(--dim);}
+  .chk-btn.chk-yes.active{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .chk-btn.chk-no.active{background:var(--bad);border-color:var(--bad);color:#fff;}
+  .chk-btn.chk-na.active{background:var(--dim);border-color:var(--dim);color:#fff;font-size:9.5px;}
+  .modal-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--bdr);}
+  .btn-ghost-modal{background:var(--surf2);border:1px solid var(--bdr2);color:var(--txt);font-family:var(--fb);font-size:12px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;}
+  .btn-ghost-modal:hover{background:var(--surf3);}
+  .counter-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px;}
+  .counter-card{background:var(--surf);border:1px solid var(--bdr);border-radius:13px;padding:14px 16px;box-shadow:0 2px 12px rgba(15,23,42,.04);}
+  .counter-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin-bottom:6px;}
+  .counter-val{font-family:var(--fh);font-size:22px;font-weight:800;color:var(--heading);}
+
+  /* ── Activity log ── */
+  .ptabs{display:flex;gap:4px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;padding:3px;}
+  .ptab{padding:5px 12px;border-radius:6px;border:none;background:transparent;color:var(--muted);font-size:11px;font-family:var(--fb);font-weight:600;cursor:pointer;transition:all .15s;}
+  .ptab:hover{color:var(--txt);}
+  .ptab.active{background:var(--submitter);color:#fff;}
+  .fld-date{background:var(--surf2);border:1px solid var(--bdr2);border-radius:8px;padding:6px 10px;color:var(--txt);font-size:11.5px;font-family:var(--fb);}
+  .dl-btn{background:var(--surf2);border:1px solid var(--bdr2);color:var(--txt);font-family:var(--fb);font-size:11px;font-weight:600;padding:6px 13px;border-radius:8px;cursor:pointer;}
+  .dl-btn:hover{border-color:var(--submitter);color:var(--submitter);}
+  .log-action{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+  .log-action.Submitted{background:rgba(201,130,15,.14);color:var(--pending);}
+  .log-action.Assigned{background:rgba(14,148,136,.14);color:var(--subapprover);}
+  .log-action.Approved{background:rgba(26,148,99,.14);color:var(--ok);}
+  .log-action.Rejected{background:rgba(214,69,69,.14);color:var(--bad);}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(0);background:var(--heading);border:1px solid var(--bdr2);color:#fff;font-size:12.5px;font-weight:600;padding:11px 20px;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,.18);opacity:0;pointer-events:none;transition:all .25s;z-index:100;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  @media(max-width:640px){
+    .form-grid{grid-template-columns:1fr;}
+    .pending-row{flex-wrap:wrap;}
+    .pending-mid,.pending-actions{margin-left:auto;}
+    .chk-row{flex-wrap:wrap;}
+    .chk-opts{margin-left:30px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="screenLogin">
+  <div class="login-card">
+    <div class="login-mark">CA</div>
+    <h1>Creative Approval Desk</h1>
+    <p>Submitters sign in with just their email. Every other role also needs a password.</p>
+    <div class="login-err" id="loginErr"></div>
+    <div class="fld">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@paytm.com" onkeydown="if(event.key==='Enter'){ if(document.getElementById('loginPassRow').style.display!=='none') document.getElementById('loginPass').focus(); else doLogin(); }">
+    </div>
+    <div class="fld" id="loginPassRow" style="display:none;">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Sign in</button>
+    <div style="text-align:center;font-size:10px;color:var(--muted);margin-top:18px;">Developed by <b style="color:var(--dim);font-weight:600;">Saurabh Yadav</b></div>
+  </div>
+</div>
+
+<!-- ══════════════ APP SHELL ══════════════ -->
+<div id="appShell">
+  <div style="text-align:right;font-size:10px;color:var(--muted);margin-bottom:8px;letter-spacing:.02em;">Developed by <b style="color:var(--dim);font-weight:600;">Saurabh Yadav</b></div>
+  <div class="topbar">
+    <div class="tb-left">
+      <div class="tb-mark" id="tbMark">CA</div>
+      <div>
+        <div class="tb-title">Creative Approval Desk</div>
+        <div class="tb-sub" id="tbSub">—</div>
+      </div>
+    </div>
+    <div class="tb-right">
+      <span class="role-badge" id="roleBadge">—</span>
+      <span class="user-email" id="userEmailLbl">—</span>
+      <button class="logout-btn" onclick="doLogout()">Log out</button>
+    </div>
+  </div>
+
+  <!-- ── SUBMITTER VIEW ── -->
+  <div id="viewSubmitter" style="display:none;">
+    <div class="panel">
+      <div class="ph"><div class="ph-t">Submit a creative</div><div class="ph-s">Fill in the details — your approver will review it from their queue</div></div>
+      <div class="form-grid compact-form">
+        <div class="fld"><label>Advertiser</label><input id="fAdv" placeholder="e.g. Amazon"></div>
+        <div class="fld"><label>Nature of Work</label>
+          <select id="fNature">
+            <option value="">Select…</option>
+            <option value="Redesign / Adaptation">Redesign / Adaptation</option>
+            <option value="QC">QC</option>
+            <option value="Resize + QC">Resize + QC</option>
+            <option value="Revision">Revision</option>
+            <option value="AD/CTA">AD/CTA</option>
+          </select>
+        </div>
+        <div class="fld"><label>Drive link</label><input id="fDrive" placeholder="https://drive.google.com/..."></div>
+        <div class="fld"><label>Campaign start date</label><input type="date" id="fStartDate" onclick="this.showPicker && this.showPicker()"></div>
+        <div class="fld full"><label>Click URL</label><input id="fClick" placeholder="https://..."></div>
+
+        <div class="fld full">
+          <label>Creative Type<span class="req">*</span></label>
+          <div class="dim-box"><div class="dim-grid" id="typeGrid"></div></div>
+        </div>
+        <div class="fld full">
+          <label>Creative Format<span class="req">*</span></label>
+          <div class="dim-box"><div class="dim-grid" id="formatGrid"><div class="dim-empty">Select a Creative Type first</div></div></div>
+        </div>
+        <div class="fld full">
+          <label>Sizes<span class="req">*</span></label>
+          <div class="dim-box">
+            <div class="dim-grid" id="sizeGrid"><div class="dim-empty">Select a Creative Format first</div></div>
+            <label class="dim-other">
+              <input type="checkbox" id="dimOtherChk">
+              <span>Other:</span>
+              <input type="text" id="fDimOther" placeholder="Describe the size / asset" oninput="if(this.value.trim())document.getElementById('dimOtherChk').checked=true;">
+            </label>
+          </div>
+        </div>
+
+        <div class="fld full"><label>Notes (optional)</label><textarea id="fNotes" rows="2" placeholder="Anything the approver should know"></textarea></div>
+        <div class="fld full"><button class="btn" onclick="submitCreative()">Submit for approval</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><div class="ph-t">My submissions</div><div class="ph-s">Status updates as your approver reviews them</div></div>
+      <div id="mySubmissionsList" class="scroll-list"></div>
+    </div>
+  </div>
+
+  <!-- ── APPROVER VIEW ── -->
+  <div id="viewApprover" style="display:none;">
+    <div class="panel" style="border-left:3px solid var(--pending);">
+      <div class="ph"><div class="ph-t">🕓 Pending approvals</div><div class="ph-s">Not yet assigned — assign to a sub-approver, take it yourself, or reject</div></div>
+      <div id="pendingList" class="scroll-list"></div>
+    </div>
+    <div class="panel" style="border-left:3px solid var(--subapprover);">
+      <div class="ph"><div class="ph-t">📝 Assigned to you</div><div class="ph-s">Creatives you chose to handle yourself — complete with the compliance checklist + final drive link</div></div>
+      <div id="myAssignedApproverList" class="scroll-list"></div>
+    </div>
+    <div class="panel" style="border-left:3px solid var(--subapprover);">
+      <div class="ph"><div class="ph-t">📤 Assigned — in progress</div><div class="ph-s">Delegated to a sub-approver, awaiting their compliance sign-off</div></div>
+      <div id="delegatedList" class="scroll-list"></div>
+    </div>
+    <div class="panel" style="border-left:3px solid var(--ok);">
+      <div class="ph"><div class="ph-t">✓ Recently reviewed</div><div class="ph-s">Final approve/reject decisions across your queue</div></div>
+      <div id="reviewedList" class="scroll-list"></div>
+    </div>
+  </div>
+
+  <!-- ── SUB-APPROVER VIEW ── -->
+  <div id="viewSubapprover" style="display:none;">
+    <div class="panel" style="border-left:3px solid var(--pending);">
+      <div class="ph"><div class="ph-t">🕓 Pending approvals</div><div class="ph-s">Not yet assigned — assign to anyone (approver or sub-approver), take it yourself, or reject</div></div>
+      <div id="pendingListSub" class="scroll-list"></div>
+    </div>
+    <div class="panel" style="border-left:3px solid var(--subapprover);">
+      <div class="ph"><div class="ph-t">📝 Assigned to you</div><div class="ph-s">Complete the work, then approve with the compliance checklist + final drive link</div></div>
+      <div id="myAssignedList" class="scroll-list"></div>
+    </div>
+    <div class="panel" style="border-left:3px solid var(--ok);">
+      <div class="ph"><div class="ph-t">✓ Completed by you</div><div class="ph-s">Your last approve/reject decisions</div></div>
+      <div id="subReviewedList" class="scroll-list"></div>
+    </div>
+  </div>
+
+  <!-- ── ADMIN VIEW ── -->
+  <div id="viewAdmin" style="display:none;">
+    <div class="panel">
+      <div class="ph"><div class="ph-t">Grant access</div><div class="ph-s">Add a user and assign their role — Submitters sign in with just their email; every other role needs a password</div></div>
+      <div class="form-grid">
+        <div class="fld"><label>Email</label><input id="aEmail" placeholder="name@paytm.com"></div>
+        <div class="fld"><label>Name</label><input id="aName" placeholder="Full name"></div>
+        <div class="fld"><label>Role</label>
+          <select id="aRole" onchange="toggleAdminPasswordField()">
+            <option value="submitter">Submitter</option>
+            <option value="approver">Approver</option>
+            <option value="subapprover">Sub-approver</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="fld" id="aPasswordRow" style="display:none;"><label>Password</label><input id="aPassword" type="text" placeholder="Set a password for this user"></div>
+        <div class="fld full" style="display:flex;align-items:flex-end;"><button class="btn" onclick="addUser()">Add user</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><div class="ph-t">Users &amp; access</div><div class="ph-s" id="userCountSub">—</div></div>
+      <div class="scroll-table-wrap">
+        <table class="utbl">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" style="border-left:3px solid var(--subapprover);">
+      <div class="ph"><div class="ph-t">Sub-approvers</div><div class="ph-s" id="subApproverCountSub">Team members approvers can assign creatives to</div></div>
+      <div id="subApproverList" class="scroll-list"></div>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><div class="ph-t">All submissions</div><div class="ph-s">Every creative in the system, any status</div></div>
+      <div id="allSubmissionsList" class="scroll-list"></div>
+    </div>
+
+    <div class="counter-row">
+      <div class="counter-card">
+        <div class="counter-lbl">Total Submitted (lifetime)</div>
+        <div class="counter-val" id="cntSubmitted">—</div>
+      </div>
+      <div class="counter-card">
+        <div class="counter-lbl">In Production (current)</div>
+        <div class="counter-val" style="color:var(--subapprover)" id="cntAssigned">—</div>
+      </div>
+      <div class="counter-card">
+        <div class="counter-lbl">Total Approved (lifetime)</div>
+        <div class="counter-val" style="color:var(--ok)" id="cntApproved">—</div>
+      </div>
+      <div class="counter-card">
+        <div class="counter-lbl">Total Rejected (lifetime)</div>
+        <div class="counter-val" style="color:var(--bad)" id="cntRejected">—</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ph" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div><div class="ph-t">Activity log</div><div class="ph-s">Every submit / approve / reject event, most recent first</div></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="ptabs">
+            <button class="ptab active" data-p="all" onclick="setLogPeriod('all')">All</button>
+            <button class="ptab" data-p="day" onclick="setLogPeriod('day')">Day</button>
+            <button class="ptab" data-p="month" onclick="setLogPeriod('month')">Month</button>
+            <button class="ptab" data-p="year" onclick="setLogPeriod('year')">Year</button>
+            <button class="ptab" data-p="range" onclick="setLogPeriod('range')">Range</button>
+          </div>
+          <input type="date" id="logDate" class="fld-date" style="display:none;" onchange="renderLog()" onclick="this.showPicker && this.showPicker()">
+          <span id="logRangeWrap" style="display:none;align-items:center;gap:6px;">
+            <input type="date" id="logDateFrom" class="fld-date" onchange="renderLog()" onclick="this.showPicker && this.showPicker()">
+            <span style="color:var(--muted);font-size:11px;">to</span>
+            <input type="date" id="logDateTo" class="fld-date" onchange="renderLog()" onclick="this.showPicker && this.showPicker()">
+          </span>
+          <button class="dl-btn" onclick="downloadLogCSV()">⬇ Download CSV</button>
+        </div>
+      </div>
+      <div class="scroll-table-wrap">
+        <table class="utbl">
+          <thead><tr><th>Advertiser</th><th>Type</th><th>Format</th><th>Start Date</th><th>Submitted By</th><th>Submitted On</th><th>Status</th><th>Reviewed By</th><th>Assigned To</th><th>Completed By</th><th>Last Update</th><th>Reason</th><th>Checklist</th></tr></thead>
+          <tbody id="logTableBody"></tbody>
+        </table>
+      </div>
+      <div id="logEmpty"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="checklistOverlay" onclick="if(event.target===this)closeChecklist()">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-bar">
+      <span class="modal-title">Compliance checklist — mark before approving</span>
+      <button class="modal-close" onclick="closeChecklist()">✕</button>
+    </div>
+    <div class="modal-body" id="approveExtraFields" style="padding:16px 18px 2px;display:flex;flex-direction:column;gap:12px;">
+      <div class="fld" style="margin-bottom:0;"><label>Approved drive link</label><input id="fApprovedDrive" placeholder="https://drive.google.com/..."></div>
+    </div>
+    <div class="modal-body chk-scroll" id="checklistBody"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost-modal" onclick="closeChecklist()">Cancel</button>
+      <button class="btn" style="width:auto;padding:9px 20px;" onclick="submitChecklist()">Submit &amp; Approve</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="assignOverlay" onclick="if(event.target===this)closeAssignModal()">
+  <div class="modal-box">
+    <div class="modal-bar">
+      <span class="modal-title">Assign this creative</span>
+      <button class="modal-close" onclick="closeAssignModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fld" id="assignNameHint" style="margin-bottom:14px;"></div>
+      <div class="fld" style="margin-bottom:0;"><label>Assign to</label>
+        <select id="fAssignSubApprover"><option value="">Loading…</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost-modal" onclick="closeAssignModal()">Cancel</button>
+      <button class="btn" style="width:auto;padding:9px 20px;" onclick="submitAssign()">Assign</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="detailsOverlay" onclick="if(event.target===this)closeDetails()">
+  <div class="modal-box">
+    <div class="modal-bar">
+      <span class="modal-title">Submission details</span>
+      <button class="modal-close" onclick="closeDetails()">✕</button>
+    </div>
+    <div class="modal-body" id="detailsBody"></div>
+  </div>
+</div>
+
+<script>
+// ── Roles ──
+const ROLE_META = {
+  submitter: {label:'Submitter', color:'var(--submitter)', mark:'#4d8ef5'},
+  approver:  {label:'Approver',  color:'var(--approver)',  mark:'#a86ef5'},
+  subapprover: {label:'Sub-approver', color:'var(--subapprover)', mark:'#14b8a6'},
+  admin:     {label:'Admin',     color:'var(--admin)',     mark:'#f5a623'}
+};
+
+// ── CONFIG: paste your deployed Apps Script /exec URL here ──
+const APPS_SCRIPT_URL = "https://script.google.com/a/macros/paytm.com/s/AKfycbz4502Qa9TUh6i8e0_351O8ikzT6rWEMMKItf7ei40W2NmX0e6ETT1FB5_enfv089fgBQ/exec";
+
+let CURRENT=null; // {email, name, role} — set after a successful login
+
+let REVIEWED_CACHE=[];
+function viewDetails(id){
+  const s = [REVIEWED_CACHE, DELEGATED_CACHE, PENDING_CACHE, MY_ASSIGNED_CACHE, ASSIGNED_CACHE, SUB_COMPLETED_CACHE]
+    .reduce((found, cache)=> found || (cache||[]).find(x=>x.ID===id), null);
+  if(!s) return;
+  const rows=[
+    ['Advertiser', s.Advertiser],
+    ['Creative Type', gf(s,'Creative Type')||'—'],
+    ['Creative Format', gf(s,'Creative Format')||'—'],
+    ['Nature of Work', gf(s,'Nature of Work')||'—'],
+    ['Required Dimensions', gf(s,'Required Dimensions')||'—'],
+    ['Campaign Start Date', gf(s,'Campaign Start Date')||'—'],
+    ['Status', statusChip(s.Status)],
+    ['Submitted By', s['Submitted By']],
+    ['Submitted On', fmtDate(s['Submitted On'])],
+    ['Reviewed By', s['Reviewed By']||'—'],
+    ['Reviewed On', s['Reviewed On']?fmtDate(s['Reviewed On']):'—'],
+    ['Assigned To', gf(s,'Assigned To')||'—'],
+    ['Completed By', gf(s,'Completed By')||'—'],
+    ['Completed On', gf(s,'Completed On')?fmtDate(gf(s,'Completed On')):'—'],
+    ['Reason', s.Reason||'—'],
+    ['Checklist', gf(s,'Checklist') ? `${checklistSummary(gf(s,'Checklist'))} <button class="view-details-btn" style="margin-left:6px;" onclick="viewChecklistReadonly('${gf(s,'Checklist')}')">View</button>` : '—'],
+    ['Drive Link', s['Drive Link']?`<a href="${s['Drive Link']}" target="_blank" rel="noopener">Open ↗</a>`:'—'],
+    ['Approved Drive Link', gf(s,'Approved Drive Link')?`<a href="${gf(s,'Approved Drive Link')}" target="_blank" rel="noopener">Open ↗</a>`:'—'],
+    ['Click URL', s['Click URL']?`<a href="${s['Click URL']}" target="_blank" rel="noopener">Open ↗</a>`:'—']
+  ];
+  document.getElementById('detailsBody').innerHTML=rows.map(([l,v])=>`<div class="mrow"><span class="mrow-lbl">${l}</span><span class="mrow-val">${v}</span></div>`).join('');
+  document.getElementById('detailsOverlay').classList.add('open');
+}
+function closeDetails(){ document.getElementById('detailsOverlay').classList.remove('open'); }
+function viewChecklistReadonly(code){
+  const decoded=decodeChecklist(code);
+  document.getElementById('approveExtraFields').style.display='none';
+  document.getElementById('checklistBody').innerHTML = decoded.map((d,i)=>`
+    <div class="chk-row">
+      <div class="chk-num">${i+1}</div>
+      <div class="chk-text" title="${(CHECKLIST_DESCRIPTIONS[i]||'').replace(/"/g,'&quot;')}">${d.item}</div>
+      <div class="chk-opts"><b style="color:${d.answer==='Yes'?'var(--ok)':d.answer==='No'?'var(--bad)':'var(--muted)'}">${d.answer}</b></div>
+    </div>`).join('');
+  document.querySelector('#checklistOverlay .modal-title').textContent='Compliance checklist (read-only)';
+  document.querySelector('#checklistOverlay .modal-footer').style.display='none';
+  document.getElementById('checklistOverlay').classList.add('open');
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+// ── JSONP loader — every call (read or write) goes through this as a GET, ──
+// ── which sidesteps the org's CORS restriction on script.google.com ──
+function callScript(params){
+  return new Promise((resolve, reject)=>{
+    const cbName='jsonp_cb_'+Math.random().toString(36).slice(2);
+    const script=document.createElement('script');
+    let done=false;
+    const cleanup=()=>{ delete window[cbName]; script.remove(); };
+    window[cbName]=(data)=>{
+      done=true;
+      if(data && data.error){ reject(new Error(data.error)); } else { resolve(data); }
+      cleanup();
+    };
+    script.onerror=()=>{ if(!done){ reject(new Error('Could not reach the sheet — check APPS_SCRIPT_URL and deployment access.')); cleanup(); } };
+    const qs=new URLSearchParams({...params, callback:cbName}).toString();
+    script.src=APPS_SCRIPT_URL+'?'+qs;
+    document.body.appendChild(script);
+    setTimeout(()=>{ if(!done){ reject(new Error('Timed out waiting for the sheet.')); cleanup(); } }, 15000);
+  });
+}
+
+// ── AUTH (simple: email checked against the Users sheet, no password) ──
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  const passRow=document.getElementById('loginPassRow');
+  const password=document.getElementById('loginPass').value;
+  const errEl=document.getElementById('loginErr'), btn=document.getElementById('loginBtn');
+  errEl.classList.remove('show');
+  if(!email){ errEl.textContent='Enter your email to continue.'; errEl.classList.add('show'); return; }
+  btn.disabled=true; btn.textContent='Checking…';
+  try{
+    const res=await callScript({action:'login', email, password});
+    if(!res.found){
+      if(res.reason==='password-required'){
+        passRow.style.display='block';
+        errEl.textContent='This role needs a password — enter it to continue.';
+        errEl.classList.add('show');
+        document.getElementById('loginPass').focus();
+        return;
+      }
+      errEl.textContent = res.reason==='wrong-password'
+        ? 'Incorrect password.'
+        : 'No access found for '+email+'. Ask your admin to add you.';
+      errEl.classList.add('show');
+      return;
+    }
+    CURRENT={email, name:res.name, role:res.role};
+    localStorage.setItem('cad_session', JSON.stringify(CURRENT));
+    document.getElementById('loginPass').value='';
+    enterApp();
+  }catch(e){
+    errEl.textContent=e.message; errEl.classList.add('show');
+  }finally{
+    btn.disabled=false; btn.textContent='Sign in';
+  }
+}
+function enterApp(){
+  document.getElementById('screenLogin').style.display='none';
+  document.getElementById('appShell').style.display='block';
+  const rm=ROLE_META[CURRENT.role];
+  document.getElementById('tbMark').style.background=rm.mark;
+  document.getElementById('tbSub').textContent=rm.label+' view';
+  document.getElementById('roleBadge').textContent=rm.label;
+  document.getElementById('roleBadge').className='role-badge '+CURRENT.role;
+  document.getElementById('userEmailLbl').textContent=CURRENT.name+' · '+CURRENT.email;
+
+  ['viewSubmitter','viewApprover','viewSubapprover','viewAdmin'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('view'+CURRENT.role[0].toUpperCase()+CURRENT.role.slice(1)).style.display='block';
+
+  if(CURRENT.role==='submitter') renderSubmitter();
+  if(CURRENT.role==='approver') renderApprover();
+  if(CURRENT.role==='subapprover') renderSubApprover();
+  if(CURRENT.role==='admin') renderAdmin();
+}
+function doLogout(){
+  CURRENT=null;
+  localStorage.removeItem('cad_session');
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginPassRow').style.display='none'; // next sign-in starts fresh — don't assume the same role
+  document.getElementById('loginErr').classList.remove('show');
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('screenLogin').style.display='flex';
+}
+// Restore session on page load — user stays logged in across refreshes
+// until they explicitly click Log out.
+(function restoreSession(){
+  const saved=localStorage.getItem('cad_session');
+  if(!saved) return;
+  try{
+    CURRENT=JSON.parse(saved);
+    if(CURRENT && CURRENT.email && CURRENT.role) enterApp();
+  }catch(e){ localStorage.removeItem('cad_session'); }
+})();
+
+// Flexible field reader — tolerates minor differences in the sheet's column
+// header spelling/spacing/case (e.g. "Creative Type" vs "CreativeType").
+function gf(obj, name){
+  if(obj[name]!=null && obj[name]!=='') return obj[name];
+  const norm=name.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const found=Object.keys(obj).find(k=>k.toLowerCase().replace(/[^a-z0-9]/g,'')===norm);
+  return (found && obj[found]!=null) ? obj[found] : '';
+}
+function fmtDate(s){ return s || '—'; }
+
+function statusChip(status){
+  const map={Submitted:'Pending review', assigned:'In production', approved:'Approved', rejected:'Rejected'};
+  const cls = status==='Submitted' ? 'submitted' : status;
+  return `<span class="status-chip ${cls}">${map[status]||status}</span>`;
+}
+function stepper(status){
+  if(status==='rejected'){
+    return `
+      <div class="stepper">
+        <div class="step"><span class="step-dot done"></span><span class="step-lbl">Submitted</span></div>
+        <div class="step-line"></div>
+        <div class="step"><span class="step-dot bad"></span><span class="step-lbl">Rejected</span></div>
+      </div>`;
+  }
+  const inProdDone = (status==='assigned' || status==='approved');
+  const approvedDone = (status==='approved');
+  return `
+    <div class="stepper">
+      <div class="step"><span class="step-dot done"></span><span class="step-lbl">Submitted</span></div>
+      <div class="step-line"></div>
+      <div class="step"><span class="step-dot ${inProdDone?'done':'pending'}"></span><span class="step-lbl">In production</span></div>
+      <div class="step-line"></div>
+      <div class="step"><span class="step-dot ${approvedDone?'done':'pending'}"></span><span class="step-lbl">Approved</span></div>
+    </div>`;
+}
+
+// ── SUBMITTER ──
+// Creative Type -> Creative Format -> Sizes, from the creative-spec sheet.
+const CREATIVE_TYPE_FORMAT_SIZES = {
+  "Banner": {
+    "Home page ATF": ["1440x480"],
+    "PTS Curtain": ["1440x1620"],
+    "PTS Banner 2.0": ["1440x720"],
+    "Scratch Card": ["570x498", "620x328", "SC logo - 400x400", "SC Rail - 312x545", "SC Rail - 328x512"],
+    "STW": ["VC2 - 800x1040", "My Voucher - 855x747"],
+    "Icons": ["400x400", "128x128", "144x144"],
+    "Hot Deals": ["VC2 - 800x1040", "PDP Image - 1000x748", "Background Image - 855x747", "Tabbed Widget - 145x164", "Third Image - 312x284", "Carousel - 312x284", "Logo - 400x400"],
+    "CBO Banner": ["Claim Deal - 306x138"],
+    "Jackpot": ["Assured Price - 800x800", "Assured Offer - 762x717", "Assured Offer - 375x256", "Logo - 800x300"],
+    "2P": ["728x90", "200x450", "300x250", "480x320", "300x600"],
+    "InMobi": ["320x50", "728x90", "300x250", "320x480"],
+    "WhatsApp Banner": ["1200x600"],
+    "Push Notification": ["1200x600"],
+    "Small Thin": ["1440x200"],
+    "2XN": ["600x600", "480x480"],
+    "Brand in Spotlight": ["640x640"],
+    "Ticker Image": ["640x640"]
+  },
+  "Audio": {
+    "Jingle": ["8KHZ"]
+  },
+  "Video": {
+    "Fallback": ["1042x516", "1440x1620"],
+    "Video": ["16:9", "9:16"]
+  },
+  "GIF": {
+    "Homepage": ["1440x480"],
+    "PTS 2.0": ["1440x720"],
+    "PTS Curtain": ["1440x1620"]
+  },
+  "HTML": {
+    "Emailer": ["Width - 600px"]
+  }
+};
+
+function renderTypeOptions(){
+  document.getElementById('typeGrid').innerHTML = Object.keys(CREATIVE_TYPE_FORMAT_SIZES).map(t=>`
+    <label class="dim-item"><input type="checkbox" class="type-chk" value="${t}" onchange="renderFormatOptions()"> ${t}</label>`).join('');
+}
+renderTypeOptions();
+
+function renderFormatOptions(){
+  const checkedTypes = Array.from(document.querySelectorAll('.type-chk:checked')).map(c=>c.value);
+  const grid = document.getElementById('formatGrid');
+  if(!checkedTypes.length){
+    grid.innerHTML = '<div class="dim-empty">Select a Creative Type first</div>';
+    updateSizeOptions();
+    return;
+  }
+  const prevChecked = new Set(Array.from(document.querySelectorAll('.format-chk:checked')).map(c=>c.value));
+  let html='';
+  checkedTypes.forEach(t=>{
+    Object.keys(CREATIVE_TYPE_FORMAT_SIZES[t]).forEach(f=>{
+      const val = t+'|||'+f;
+      const checked = prevChecked.has(val) ? 'checked' : '';
+      html += `<label class="dim-item"><input type="checkbox" class="format-chk" value="${val}" data-type="${t}" data-format="${f}" onchange="updateSizeOptions()" ${checked}> ${f}</label>`;
+    });
+  });
+  grid.innerHTML = html;
+  updateSizeOptions();
+}
+function updateSizeOptions(){
+  const checkedFormats = Array.from(document.querySelectorAll('.format-chk:checked'));
+  const grid = document.getElementById('sizeGrid');
+  if(!checkedFormats.length){
+    grid.innerHTML = '<div class="dim-empty">Select a Creative Format first</div>';
+    return;
+  }
+  const prevChecked = new Set(Array.from(document.querySelectorAll('.size-chk:checked')).map(c=>c.value));
+  let html='';
+  checkedFormats.forEach(cb=>{
+    const t=cb.dataset.type, f=cb.dataset.format;
+    (((CREATIVE_TYPE_FORMAT_SIZES[t]||{})[f])||[]).forEach(sz=>{
+      const val = t+'|||'+f+'|||'+sz;
+      const checked = prevChecked.has(val) ? 'checked' : '';
+      html += `<label class="dim-item"><input type="checkbox" class="size-chk" value="${val}"${checked?' checked':''}> ${sz}</label>`;
+    });
+  });
+  grid.innerHTML = html;
+}
+function collectCreativeTypes(){
+  return Array.from(document.querySelectorAll('.type-chk:checked')).map(c=>c.value).join(', ');
+}
+function collectCreativeFormats(){
+  return Array.from(document.querySelectorAll('.format-chk:checked')).map(c=>c.dataset.format).join(', ');
+}
+function collectDimensions(){
+  const sizes = Array.from(document.querySelectorAll('.size-chk:checked')).map(c=>{
+    const [type,format,size] = c.value.split('|||');
+    return `${type} / ${format} / ${size}`;
+  });
+  const otherTxt=document.getElementById('fDimOther').value.trim();
+  if(otherTxt) sizes.push('Other: '+otherTxt);
+  else if(document.getElementById('dimOtherChk').checked) sizes.push('Other');
+  return sizes.join('; ');
+}
+function resetDimensions(){
+  document.querySelectorAll('.type-chk').forEach(c=>c.checked=false);
+  renderFormatOptions(); // clears format + size grids too, since nothing is checked now
+  document.getElementById('dimOtherChk').checked=false;
+  document.getElementById('fDimOther').value='';
+}
+function prefillDimensions(str){
+  resetDimensions();
+  if(!str) return;
+  const triples=[]; const leftovers=[];
+  str.split(';').map(p=>p.trim()).filter(Boolean).forEach(p=>{
+    const parts = p.split(' / ');
+    if(parts.length===3 && CREATIVE_TYPE_FORMAT_SIZES[parts[0]] && CREATIVE_TYPE_FORMAT_SIZES[parts[0]][parts[1]]){
+      triples.push(parts);
+    }else if(/^other:/i.test(p)){
+      document.getElementById('dimOtherChk').checked=true;
+      document.getElementById('fDimOther').value=p.slice(p.indexOf(':')+1).trim();
+    }else if(/^other$/i.test(p)){
+      document.getElementById('dimOtherChk').checked=true;
+    }else{
+      leftovers.push(p);
+    }
+  });
+  const typesNeeded = new Set(triples.map(t=>t[0]));
+  document.querySelectorAll('.type-chk').forEach(c=>{ if(typesNeeded.has(c.value)) c.checked=true; });
+  renderFormatOptions();
+  const formatsNeeded = new Set(triples.map(t=>t[0]+'|||'+t[1]));
+  document.querySelectorAll('.format-chk').forEach(c=>{ if(formatsNeeded.has(c.value)) c.checked=true; });
+  updateSizeOptions();
+  const sizesNeeded = new Set(triples.map(t=>t.join('|||')));
+  document.querySelectorAll('.size-chk').forEach(c=>{ if(sizesNeeded.has(c.value)) c.checked=true; });
+  if(leftovers.length){
+    document.getElementById('dimOtherChk').checked=true;
+    document.getElementById('fDimOther').value=leftovers.join('; ');
+  }
+}
+
+async function submitCreative(){
+  const advertiser=document.getElementById('fAdv').value.trim();
+  const natureOfWork=document.getElementById('fNature').value;
+  const startDate=document.getElementById('fStartDate').value;
+  const drive=document.getElementById('fDrive').value.trim();
+  const click=document.getElementById('fClick').value.trim();
+  const notes=document.getElementById('fNotes').value.trim();
+  const creativeType=collectCreativeTypes();
+  const creativeFormat=collectCreativeFormats();
+  const dimensions=collectDimensions();
+  if(!advertiser||!drive||!click){ toast('Fill in advertiser, Drive link and click URL.'); return; }
+  if(!natureOfWork){ toast('Select the nature of work.'); return; }
+  if(!creativeType){ toast('Select at least one Creative Type.'); return; }
+  if(!creativeFormat){ toast('Select at least one Creative Format.'); return; }
+  if(!dimensions){ toast('Select at least one size.'); return; }
+  try{
+    await callScript({action:'submit', advertiser, creativeType, creativeFormat, natureOfWork, dimensions, startDate, drive, click, notes, email:CURRENT.email});
+    ['fAdv','fNature','fStartDate','fDrive','fClick','fNotes'].forEach(id=>document.getElementById(id).value='');
+    resetDimensions();
+    toast('Submitted for approval.');
+    renderSubmitter();
+  }catch(e){ toast(e.message); }
+}
+let MY_SUBMISSIONS=[];
+async function renderSubmitter(){
+  const c=document.getElementById('mySubmissionsList');
+  c.innerHTML=`<div class="empty"><div class="empty-t">Loading…</div></div>`;
+  let mine=[];
+  try{ ({creatives:mine}=await callScript({action:'mySubmissions', email:CURRENT.email})); }
+  catch(e){ c.innerHTML=`<div class="empty"><div class="empty-t">${e.message}</div></div>`; return; }
+  MY_SUBMISSIONS=mine;
+  if(!mine.length){ c.innerHTML=`<div class="empty"><div class="empty-ico">📭</div><div class="empty-t">No submissions yet</div></div>`; return; }
+  c.innerHTML=mine.map(s=>`
+    <div class="sub-card">
+      <div class="sub-top">
+        <div><div class="sub-name">${s.Advertiser}</div><div class="sub-adv">${gf(s,'Creative Type')||'—'}${gf(s,'Creative Format')?' · '+gf(s,'Creative Format'):''}</div></div>
+        ${statusChip(s.Status)}
+      </div>
+      ${stepper(s.Status)}
+      ${s.Status==='rejected'?`<div class="reject-row">
+        <div class="reject-reason">✕ ${s.Reason||'Rejected'}</div>
+        <button class="resubmit-btn" onclick="resubmitCreative('${s.ID}')">↻ Resubmit</button>
+      </div>`:''}
+      <div class="sub-meta">
+        <span>Submitted ${fmtDate(s['Submitted On'])}</span>
+        ${gf(s,'Nature of Work')?`<span>${gf(s,'Nature of Work')}</span>`:''}
+        ${gf(s,'Campaign Start Date')?`<span>Starts ${gf(s,'Campaign Start Date')}</span>`:''}
+        ${gf(s,'Assigned To')?`<span>With ${gf(s,'Assigned To')}</span>`:''}
+        ${s['Reviewed On']?`<span>Reviewed ${fmtDate(s['Reviewed On'])}</span>`:''}
+        <a href="${s['Drive Link']}" target="_blank" rel="noopener">Drive link ↗</a>
+        ${gf(s,'Approved Drive Link')?`<a href="${gf(s,'Approved Drive Link')}" target="_blank" rel="noopener">Approved link ↗</a>`:''}
+      </div>
+      ${gf(s,'Required Dimensions')?`<div class="sub-meta" style="margin-top:2px;"><span>Dimensions: ${gf(s,'Required Dimensions')}</span></div>`:''}
+    </div>`).join('');
+}
+function resubmitCreative(id){
+  const s=MY_SUBMISSIONS.find(x=>x.ID===id);
+  if(!s) return;
+  document.getElementById('fAdv').value=s.Advertiser||'';
+  document.getElementById('fNature').value=gf(s,'Nature of Work')||'';
+  document.getElementById('fStartDate').value=gf(s,'Campaign Start Date')||'';
+  document.getElementById('fDrive').value=s['Drive Link']||'';
+  document.getElementById('fClick').value=s['Click URL']||'';
+  document.getElementById('fNotes').value=s.Notes||'';
+  prefillDimensions(gf(s,'Required Dimensions')||'');
+  document.getElementById('fAdv').scrollIntoView({behavior:'smooth', block:'center'});
+  toast('Details loaded below — fix the issue and submit again.');
+}
+
+// ── APPROVER ──
+let PENDING_CACHE=[];
+let DELEGATED_CACHE=[];
+let SUBAPPROVER_CACHE=[];
+let MY_ASSIGNED_CACHE=[]; // items the approver assigned to themself, not yet completed
+function sameEmail(a,b){ return String(a||'').trim().toLowerCase() === String(b||'').trim().toLowerCase(); }
+async function renderApprover(){
+  const pc=document.getElementById('pendingList');
+  pc.innerHTML=`<div class="empty"><div class="empty-t">Loading…</div></div>`;
+  let pending=[], reviewed=[], delegated=[], subApprovers=[], myAssigned=[];
+  const [pendingRes, reviewedRes, delegatedRes, subApproversRes, myAssignedRes] = await Promise.allSettled([
+    callScript({action:'pending'}),
+    callScript({action:'reviewed', email:CURRENT.email}),
+    callScript({action:'delegated', email:CURRENT.email}),
+    callScript({action:'subApprovers'}),
+    callScript({action:'assignedToMe', email:CURRENT.email})
+  ]);
+  if(pendingRes.status==='fulfilled') pending=pendingRes.value.creatives||[];
+  else { pc.innerHTML=`<div class="empty"><div class="empty-t">${pendingRes.reason.message}</div></div>`; return; }
+  // Filtered defensively client-side so the UI stays correct even if the backend
+  // hasn't scoped these actions to exact statuses yet.
+  if(reviewedRes.status==='fulfilled') reviewed=(reviewedRes.value.creatives||[]).filter(c=>c.Status==='approved'||c.Status==='rejected');
+  if(delegatedRes.status==='fulfilled') delegated=(delegatedRes.value.creatives||[]).filter(c=>c.Status==='assigned' && !sameEmail(gf(c,'Assigned To Email'), CURRENT.email));
+  if(subApproversRes.status==='fulfilled') subApprovers=subApproversRes.value.subApprovers||[];
+  if(myAssignedRes.status==='fulfilled') myAssigned=(myAssignedRes.value.creatives||[]).filter(c=>c.Status==='assigned' && sameEmail(gf(c,'Assigned To Email'), CURRENT.email));
+  PENDING_CACHE=pending;
+  REVIEWED_CACHE=reviewed;
+  DELEGATED_CACHE=delegated;
+  SUBAPPROVER_CACHE=subApprovers;
+  MY_ASSIGNED_CACHE=myAssigned;
+  renderApproverLists();
+}
+function pendingCardsHTML(){
+  return PENDING_CACHE.length ? PENDING_CACHE.map(s=>`
+    <div class="sub-card">
+      <div class="pending-row">
+        <div class="pending-left">
+          <div class="sub-name">${s.Advertiser}</div>
+          <div class="sub-adv">${gf(s,'Creative Type')||'—'}${gf(s,'Creative Format')?' · '+gf(s,'Creative Format'):''} · submitted by ${s['Submitted By']}</div>
+          ${s.Notes?`<div class="sub-meta" style="margin-top:2px;"><span>Note: ${s.Notes}</span></div>`:''}
+          <div class="sub-meta">
+            <span>Submitted ${fmtDate(s['Submitted On'])}</span>
+            ${gf(s,'Nature of Work')?`<span>${gf(s,'Nature of Work')}</span>`:''}
+            ${gf(s,'Campaign Start Date')?`<span>Starts ${gf(s,'Campaign Start Date')}</span>`:''}
+            <a href="${s['Drive Link']}" target="_blank" rel="noopener">Drive link ↗</a>
+            <a href="${s['Click URL']}" target="_blank" rel="noopener">Click URL ↗</a>
+          </div>
+          ${gf(s,'Required Dimensions')?`<div class="sub-meta" style="margin-top:2px;"><span>Dimensions: ${gf(s,'Required Dimensions')}</span></div>`:''}
+        </div>
+        <div class="pending-mid">${statusChip(s.Status)}</div>
+        <div class="pending-actions">
+          <button class="mini-act mini-assign" title="Assign" onclick="openAssignModal('${s.ID}')">→</button>
+          <button class="mini-act mini-reject" title="Reject" onclick="rejectFromPending('${s.ID}')">✕</button>
+        </div>
+      </div>
+    </div>`).join('') : `<div class="empty"><div class="empty-ico">✅</div><div class="empty-t">Queue is clear — nothing pending</div></div>`;
+}
+// Both the Approver's and Sub-approver's dashboards can show the pending queue
+// (either role can assign or reject) — keep whichever of these exists in sync.
+function renderPendingEverywhere(){
+  const html = pendingCardsHTML();
+  const a=document.getElementById('pendingList'); if(a) a.innerHTML=html;
+  const b=document.getElementById('pendingListSub'); if(b) b.innerHTML=html;
+}
+function renderApproverLists(){
+  const dc=document.getElementById('delegatedList'),
+        rc=document.getElementById('reviewedList'), mc=document.getElementById('myAssignedApproverList');
+
+  renderPendingEverywhere();
+
+  mc.innerHTML = MY_ASSIGNED_CACHE.length ? MY_ASSIGNED_CACHE.map(s=>`
+    <div class="sub-card">
+      <div class="pending-row">
+        <div class="pending-left">
+          <div class="sub-name">${s.Advertiser}</div>
+          <div class="sub-adv">${gf(s,'Creative Type')||'—'}${gf(s,'Creative Format')?' · '+gf(s,'Creative Format'):''} · submitted by ${s['Submitted By']||'—'}</div>
+          ${gf(s,'Nature of Work')?`<div class="sub-meta" style="margin-top:2px;"><span>${gf(s,'Nature of Work')}</span></div>`:''}
+          <div class="sub-meta">
+            <span>Assigned ${fmtDate(s['Reviewed On'])}</span>
+            <a href="${s['Drive Link']}" target="_blank" rel="noopener">Drive link ↗</a>
+            ${s['Click URL']?`<a href="${s['Click URL']}" target="_blank" rel="noopener">Click URL ↗</a>`:''}
+          </div>
+          ${gf(s,'Required Dimensions')?`<div class="sub-meta" style="margin-top:2px;"><span>Dimensions: ${gf(s,'Required Dimensions')}</span></div>`:''}
+        </div>
+        <div class="pending-actions">
+          <button class="mini-act mini-approve" title="Mark complete &amp; approve" onclick="openChecklist('${s.ID}','approver')">✓</button>
+          <button class="mini-act mini-reject" title="Send back" onclick="rejectFromMyAssigned('${s.ID}')">✕</button>
+        </div>
+      </div>
+    </div>`).join('') : `<div class="empty"><div class="empty-ico">📭</div><div class="empty-t">Nothing you've claimed for yourself right now</div></div>`;
+
+  dc.innerHTML = DELEGATED_CACHE.length ? DELEGATED_CACHE.map(s=>`
+    <div class="sub-card">
+      <div class="sub-top">
+        <div><div class="sub-name">${s.Advertiser}</div><div class="sub-adv">${gf(s,'Creative Type')||'—'}${gf(s,'Creative Format')?' · '+gf(s,'Creative Format'):''}</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="assigned-tag">→ ${gf(s,'Assigned To')||'—'}</span>
+          <button class="view-details-btn" onclick="viewDetails('${s.ID}')">View details</button>
+        </div>
+      </div>
+      <div class="sub-meta"><span>Assigned ${fmtDate(s['Reviewed On'])}</span></div>
+    </div>`).join('') : `<div class="empty"><div class="empty-ico">📤</div><div class="empty-t">Nothing delegated right now</div></div>`;
+
+  rc.innerHTML = REVIEWED_CACHE.length ? REVIEWED_CACHE.map(s=>`
+    <div class="sub-card">
+      <div class="sub-top">
+        <div><div class="sub-name">${s.Advertiser}</div><div class="sub-adv">${gf(s,'Creative Type')||'—'}${gf(s,'Creative Format')?' · '+gf(s,'Creative Format'):''}</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${statusChip(s.Status)}
+          <button class="view-details-btn" onclick="viewDetails('${s.ID}')">View details</button>
+        </div>
+      </div>
+      <div class="sub-meta">
+        <span>${s.Status==='approved'?'Completed':'Reviewed'} ${fmtDate(gf(s,'Completed On')||s['Reviewed On'])}</span>
+        ${gf(s,'Assigned To')?`<span>Handled by ${gf(s,'Assigned To')}</span>`:''}
+      </div>
+    </div>`).join('') : `<div class="empty"><div class="empty-ico">🕓</div><div class="empty-t">No review history yet</div></div>`;
+}
+
+// ── Assign modal (Approver triage step — no compliance gate here) ──
+// Can assign to any configured sub-approver, or to the approver themself.
+let ASSIGN_TARGET_ID=null;
+function openAssignModal(id){
+  ASSIGN_TARGET_ID=id;
+  const item=PENDING_CACHE.find(x=>x.ID===id);
+  document.getElementById('assignNameHint').innerHTML = item
+    ? `<div class="sub-name">${item.Advertiser}</div><div class="sub-adv">${gf(item,'Creative Type')||''}${gf(item,'Nature of Work')?' · '+gf(item,'Nature of Work'):''}</div>`
+    : '';
+  const sel=document.getElementById('fAssignSubApprover');
+  const options = ['<option value="">Select…</option>', `<option value="${CURRENT.email}">Myself (${CURRENT.name})</option>`]
+    .concat(SUBAPPROVER_CACHE.map(u=>`<option value="${u.Email}">${u.Name}</option>`));
+  sel.innerHTML = options.join('');
+  document.getElementById('assignOverlay').classList.add('open');
+}
+function closeAssignModal(){
+  document.getElementById('assignOverlay').classList.remove('open');
+  ASSIGN_TARGET_ID=null;
+}
+async function submitAssign(){
+  const sel=document.getElementById('fAssignSubApprover');
+  const subEmail=sel.value;
+  if(!subEmail){ toast('Select who to assign this to.'); return; }
+  const subName = sameEmail(subEmail, CURRENT.email) ? CURRENT.name : sel.selectedOptions[0].textContent;
+  const id=ASSIGN_TARGET_ID;
+  closeAssignModal();
+  moveToDelegated(id, subEmail, subName);
+  toast('Assigned to '+subName+'.');
+  callScript({action:'assign', id, subApprover:subEmail, subApproverName:subName, email:CURRENT.email})
+    .catch(e=>toast('Warning: could not confirm with the sheet — '+e.message))
+    .finally(()=> CURRENT.role==='subapprover' ? renderSubApprover() : renderApprover());
+}
+function moveToDelegated(id, subEmail, subName){
+  const idx=PENDING_CACHE.findIndex(x=>x.ID===id);
+  if(idx===-1) return;
+  const item=PENDING_CACHE.splice(idx,1)[0];
+  item.Status='assigned';
+  item['Reviewed By']=CURRENT.email;
+  item['Reviewed On']=new Date().toISOString().slice(0,16).replace('T',' ');
+  item['Assigned To']=subName;
+  item['Assigned To Email']=subEmail;
+  const isSelf = sameEmail(subEmail, CURRENT.email);
+  if(CURRENT.role==='subapprover'){
+    if(isSelf) ASSIGNED_CACHE.unshift(item); // sub-approver claimed it for themself
+    renderPendingEverywhere();
+    renderSubApproverLists();
+  }else{
+    if(isSelf) MY_ASSIGNED_CACHE.unshift(item); // approver claimed it for themself
+    else DELEGATED_CACHE.unshift(item); // handed to someone else — read-only until they finish
+    renderApproverLists();
+  }
+}
+function moveToReviewed(id, status, reason, checklist){
+  const idx=PENDING_CACHE.findIndex(x=>x.ID===id);
+  if(idx===-1) return;
+  const item=PENDING_CACHE.splice(idx,1)[0];
+  item.Status=status;
+  item['Reviewed By']=CURRENT.email;
+  item['Reviewed On']=new Date().toISOString().slice(0,16).replace('T',' ');
+  item.Reason=reason||'';
+  item.Checklist=checklist||'';
+  if(CURRENT.role==='subapprover'){
+    renderPendingEverywhere(); // removed from the shared queue; the refetch settles history views
+  }else{
+    REVIEWED_CACHE.unshift(item);
+    renderApproverLists();
+  }
+}
+async function rejectFromPending(id){
+  const reason=prompt('Reason for rejection (shown to the submitter):','');
+  if(reason===null) return; // cancelled
+  // Update the UI immediately — don't wait on the network round-trip.
+  moveToReviewed(id, 'rejected', reason, '');
+  toast('Rejected — submitter notified.');
+  callScript({action:'review', id, decision:'rejected', reason, checklist:'', email:CURRENT.email})
+    .catch(e=>toast('Warning: could not confirm with the sheet — '+e.message))
+    .finally(()=> CURRENT.role==='subapprover' ? renderSubApprover() : renderApprover());
+}
+
+// ── Compliance checklist — now the SUB-APPROVER's final sign-off step ──
+const CHECKLIST_ITEMS = [
+  "Ad clearly labeled – Ad or Sponsored",
+  "Ad not promoting products in banned categories",
+  "No unproven superlatives used",
+  "Price / EMI / offer claims include all conditions and validity",
+  "No cybercrime, illegal lending, pyramid schemes Promo",
+  "Competitor claims verified, if appl",
+  "3rd Party Brand Logos not used",
+  "Disclaimers legible / prominent if present",
+  "Investment / Returns disclaimer present",
+  "Crypto, VDA risk disclosure",
+  "BFSI reg number visible - RBI/SEBI/IRDAI",
+  "No disease cure claims",
+  "Pharma disclaimer present",
+  "Ayurvedic scope respected",
+  "Body Transformation claims fair",
+  "Substance statutory warning",
+  "No explicit female imagery",
+  "Female image not used as decorative prop",
+  "No derogatory stereotyping",
+  "No sexual innuendo",
+  "No body / skin shaming",
+  "No minors in adult ads",
+  "Countdown timers factual, IA",
+  "Social proof not inflated",
+  "Discount, Free, Claim TnC text present",
+  "Trial price / renewal stated",
+  "No Hidden Costs",
+  "No winnings guarantee",
+  "Responsible gaming disclaimer",
+  "No false RMG urgency",
+  "Election Ad creative - MCMC Coverage",
+  "Govt Ads - Issued-by attribution is visible"
+];
+// Hover text for each check above, same order — from the compliance checklist reference sheet.
+const CHECKLIST_DESCRIPTIONS = [
+  "Creative is clearly identifiable as an advertisement — no deceptive editorial, news-article or organic-content styling.",
+  "Banned categories: Tobacco, Alcohol, Betting, Porn, Weapons, Illegal Drugs.",
+  "No unqualified superlatives (\"best\", \"No. 1\", \"world's greatest\") without proof.",
+  "Price, EMI, or offer claims are factually accurate and currently valid.",
+  "No content promoting unlawful activity: cybercrime, illegal lending, pyramid schemes.",
+  "Comparative claims against competitors are factual, fair and verifiable.",
+  "No 3rd party logos can be used on an advertiser's creatives unless authorization proof is provided by the advertiser.",
+  "Disclaimers and conditions are not buried in fine print, footnotes or low-contrast text.",
+  "Investment/returns claims carry required disclaimers.",
+  "For crypto/virtual-digital-asset ads: risk disclosure present and compliant with current SEBI/RBI advisories.",
+  "For BFSI ads: RBI/SEBI/IRDAI registration number or disclaimer visible and legible.",
+  "Creative does not claim to cure, prevent, diagnose or treat any disease.",
+  "Regulated health/pharma products carry required disclaimer (\"Consult a doctor before use\").",
+  "Ayurvedic, herbal or traditional remedy products do not claim therapeutic outcomes beyond permitted scope.",
+  "Weight loss, fitness or body transformation claims are not exaggerated or unsubstantiated.",
+  "Advertisements for habit-forming substances carry statutory warnings.",
+  "No depiction of women in a sexually explicit, obscene or degrading manner.",
+  "Female imagery is not used as a decorative prop unrelated to the product being advertised.",
+  "No content portrays women (or any group) in a derogatory, subservient or stereotyped role.",
+  "No sexual innuendo, double entendre or suggestive imagery directed at or involving women.",
+  "No body shaming, colorism, or claims shaming skin tone, body weight or physical appearance.",
+  "Ads for age-restricted categories do not feature minors or minor-presenting models.",
+  "Countdown timers, \"Only X left\", \"Offer ends today\" claims are factually accurate and verifiable.",
+  "Social proof claims (\"10,000 people viewing this now\", \"Trending\") are real and not inflated.",
+  "Discount or price claims include T&Cs (applicable conditions, eligibility, and validity period).",
+  "Free trial ads clearly state pricing post-trial, auto-renewal terms and cancellation method.",
+  "Total price shown in ad includes all fees, taxes and charges — no surprise costs revealed only at checkout.",
+  "Creative does not guarantee winnings or portray gaming as a reliable income source.",
+  "Responsible gaming disclaimer present and legible (\"This game involves financial risk\").",
+  "No fake urgency patterns in RMG ads (\"Limited seats in tournament\", fabricated player counts); no celebrity or influencer shown winning large amounts or implying skill guarantees.",
+  "Creative used in a campaign by a political party is approved by the Election Commission (MCMC certificate) before the campaign start date.",
+  "Creative clearly names the Ministry, Department, or PSU commissioning the ad."
+];
+let CHECKLIST_TARGET_ID=null;
+let CHECKLIST_SOURCE='subapprover'; // 'subapprover' | 'approver' — which dashboard/cache this completion updates
+
+function openChecklist(id, source){
+  CHECKLIST_TARGET_ID=id;
+  CHECKLIST_SOURCE = source || 'subapprover';
+  document.getElementById('approveExtraFields').style.display='block';
+  document.getElementById('fApprovedDrive').value='';
+  document.getElementById('checklistBody').innerHTML = CHECKLIST_ITEMS.map((item,i)=>`
+    <div class="chk-row">
+      <div class="chk-num">${i+1}</div>
+      <div class="chk-text" title="${(CHECKLIST_DESCRIPTIONS[i]||'').replace(/"/g,'&quot;')}">${item}</div>
+      <div class="chk-opts" data-idx="${i}">
+        <input type="hidden" id="chk_${i}" value="">
+        <button type="button" class="chk-btn chk-yes" onclick="setChk(${i},'Y')" title="Yes">✓</button>
+        <button type="button" class="chk-btn chk-no" onclick="setChk(${i},'N')" title="No">✕</button>
+        <button type="button" class="chk-btn chk-na" onclick="setChk(${i},'A')" title="NA">NA</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('checklistOverlay').classList.add('open');
+}
+function setChk(i, val){
+  document.getElementById('chk_'+i).value=val;
+  const opts=document.querySelector(`.chk-opts[data-idx="${i}"]`);
+  opts.querySelectorAll('.chk-btn').forEach(b=>b.classList.remove('active'));
+  const map={Y:'chk-yes', N:'chk-no', A:'chk-na'};
+  opts.querySelector('.'+map[val]).classList.add('active');
+}
+function closeChecklist(){
+  document.getElementById('checklistOverlay').classList.remove('open');
+  document.querySelector('#checklistOverlay .modal-title').textContent='Compliance checklist — mark before approving';
+  document.querySelector('#checklistOverlay .modal-footer').style.display='flex';
+  CHECKLIST_TARGET_ID=null;
+}
+async function submitChecklist(){
+  const approvedDrive=document.getElementById('fApprovedDrive').value.trim();
+  if(!approvedDrive){ toast('Add the approved drive link.'); return; }
+  const codes=[];
+  for(let i=0;i<CHECKLIST_ITEMS.length;i++){
+    const val=document.getElementById('chk_'+i).value;
+    if(!val){ toast('Please mark all '+CHECKLIST_ITEMS.length+' checklist items before submitting.'); return; }
+    codes.push(val);
+  }
+  const id=CHECKLIST_TARGET_ID;
+  closeChecklist();
+  await completeAssignment(id, codes.join(''), approvedDrive);
+}
+function decodeChecklist(code){
+  if(!code) return [];
+  const map={Y:'Yes',N:'No',A:'NA'};
+  return CHECKLIST_ITEMS.map((item,i)=>({item, answer: map[code[i]]||'—'}));
+}
+function checklistSummary(code){
+  if(!code) return '—';
+  let y=0,n=0,a=0;
+  for(const c of code){ if(c==='Y')y++; else if(c==='N')n++; else if(c==='A')a++; }
+  return `${y} Yes · ${n} No · ${a} NA`;
+}
+
+// ── SUB-APPROVER ──
+let ASSIGNED_CACHE=[];
+let SUB_COMPLETED_CACHE=[];
+async function renderSubApprover(){
+  const psub=document.getElementById('pendingListSub');
+  psub.innerHTML=`<div class="empty"><div class="empty-t">Loading…</div></div>`;
+  let pending=[], assigned=[], completed=[], subApprovers=[];
+  const [pendingRes, assignedRes, completedRes, subApproversRes] = await Promise.allSettled([
+    callScript({action:'pending'}),
+    callScript({action:'assignedToMe', email:CURRENT.email}),
+    callScript({action:'completedByMe', email:CURRENT.email}),
+    callScript({action:'subApprovers'})
+  ]);
+  if(pendingRes.status==='fulfilled') pending=pendingRes.value.creatives||[];
+  else { psub.innerHTML=`<div class="empty"><div class="empty-t">${pendingRes.reason.message}</div></div>`; }
+  if(assignedRes.status!=='fulfilled'){
+    document.getElementById('myAssignedList').innerHTML=`<div class="empty"><div class="empty-t">${assignedRes.reason.message}</div></div>`;
+    return;
+  }
+  let assignedList=(assignedRes.value.creatives||[]).filter(c=>c.Status==='assigned');
+  if(completedRes.status==='fulfilled') completed=completedRes.value.creatives||[];
+  if(subApproversRes.status==='fulfilled') subApprovers=subApproversRes.value.subApprovers||[];
+  PENDING_CACHE=pending;
+  ASSIGNED_CACHE=assignedList;
+  SUB_COMPLETED_CACHE=completed;
+  SUBAPPROVER_CACHE=subApprovers;
+  renderPendingEverywhere();
+  renderSubApproverLists();
+}
+function renderSubApproverLists(){
+  const ac=document.getElementById('myAssignedList'), cc=document.getElementById('subReviewedList');
+
+  ac.innerHTML = ASSIGNED_CACHE.length ? ASSIGNED_CACHE.map(s=>`
+    <div class="sub-card">
+      <div class="pending-row">
+        <div class="pending-left">
+          <div class="sub-name">${s.Advertiser}</div>
+          <div class="sub-adv">${gf(s,'Creative Type')||'—'}${gf(s,'Creative Format')?' · '+gf(s,'Creative Format'):''} · from ${s['Reviewed By']||'—'}</div>
+          ${s.Notes?`<div class="sub-meta" style="margin-top:2px;"><span>Note: ${s.Notes}</span></div>`:''}
+          <div class="sub-meta">
+            <span>Assigned ${fmtDate(s['Reviewed On'])}</span>
+            ${gf(s,'Nature of Work')?`<span>${gf(s,'Nature of Work')}</span>`:''}
+            <a href="${s['Drive Link']}" target="_blank" rel="noopener">Drive link ↗</a>
+            ${s['Click URL']?`<a href="${s['Click URL']}" target="_blank" rel="noopener">Click URL ↗</a>`:''}
+          </div>
+          ${gf(s,'Required Dimensions')?`<div class="sub-meta" style="margin-top:2px;"><span>Dimensions: ${gf(s,'Required Dimensions')}</span></div>`:''}
+        </div>
+        <div class="pending-actions">
+          <button class="mini-act mini-approve" title="Mark complete &amp; approve" onclick="openChecklist('${s.ID}','subapprover')">✓</button>
+          <button class="mini-act mini-reject" title="Send back" onclick="rejectFromSubApprover('${s.ID}')">✕</button>
+        </div>
+      </div>
+    </div>`).join('') : `<div class="empty"><div class="empty-ico">📭</div><div class="empty-t">Nothing assigned to you right now</div></div>`;
+
+  cc.innerHTML = SUB_COMPLETED_CACHE.length ? SUB_COMPLETED_CACHE.map(s=>`
+    <div class="sub-card">
+      <div class="sub-top">
+        <div><div class="sub-name">${s.Advertiser}</div><div class="sub-adv">${gf(s,'Creative Type')||'—'}${gf(s,'Creative Format')?' · '+gf(s,'Creative Format'):''}</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${statusChip(s.Status)}
+          <button class="view-details-btn" onclick="viewDetails('${s.ID}')">View details</button>
+        </div>
+      </div>
+      <div class="sub-meta"><span>${fmtDate(gf(s,'Completed On'))}</span></div>
+    </div>`).join('') : `<div class="empty"><div class="empty-ico">🕓</div><div class="empty-t">Nothing completed yet</div></div>`;
+}
+function moveToCompleted(id, status, reason, checklist, approvedDrive){
+  const cache = CHECKLIST_SOURCE==='approver' ? MY_ASSIGNED_CACHE : ASSIGNED_CACHE;
+  const idx=cache.findIndex(x=>x.ID===id);
+  if(idx===-1) return;
+  const item=cache.splice(idx,1)[0];
+  item.Status=status;
+  item['Completed By']=CURRENT.email;
+  item['Completed On']=new Date().toISOString().slice(0,16).replace('T',' ');
+  item.Reason=reason||'';
+  if(checklist) item.Checklist=checklist;
+  if(approvedDrive) item['Approved Drive Link']=approvedDrive;
+  if(CHECKLIST_SOURCE==='approver'){
+    REVIEWED_CACHE.unshift(item); // approver completed their own claim — shows straight in their reviewed history
+    renderApproverLists();
+  }else{
+    SUB_COMPLETED_CACHE.unshift(item);
+    renderSubApproverLists();
+  }
+}
+async function completeAssignment(id, checklist, approvedDrive){
+  // Update the UI immediately — don't wait on the network round-trip.
+  moveToCompleted(id, 'approved', '', checklist, approvedDrive);
+  toast('Approved — marked complete.');
+  const refetch = CHECKLIST_SOURCE==='approver' ? renderApprover : renderSubApprover;
+  callScript({action:'complete', id, decision:'approved', checklist, approvedDrive, reason:'', email:CURRENT.email})
+    .catch(e=>toast('Warning: could not confirm with the sheet — '+e.message))
+    .finally(()=>refetch());
+}
+async function rejectFromSubApprover(id){
+  const reason=prompt('Reason for sending this back (shown to the submitter):','');
+  if(reason===null) return; // cancelled
+  CHECKLIST_SOURCE='subapprover';
+  moveToCompleted(id, 'rejected', reason, '', '');
+  toast('Sent back — submitter notified.');
+  callScript({action:'complete', id, decision:'rejected', reason, checklist:'', approvedDrive:'', email:CURRENT.email})
+    .catch(e=>toast('Warning: could not confirm with the sheet — '+e.message))
+    .finally(()=>renderSubApprover());
+}
+async function rejectFromMyAssigned(id){
+  const reason=prompt('Reason for sending this back (shown to the submitter):','');
+  if(reason===null) return; // cancelled
+  CHECKLIST_SOURCE='approver';
+  moveToCompleted(id, 'rejected', reason, '', '');
+  toast('Sent back — submitter notified.');
+  callScript({action:'complete', id, decision:'rejected', reason, checklist:'', approvedDrive:'', email:CURRENT.email})
+    .catch(e=>toast('Warning: could not confirm with the sheet — '+e.message))
+    .finally(()=>renderApprover());
+}
+
+// ── ADMIN ──
+function toggleAdminPasswordField(){
+  const role=document.getElementById('aRole').value;
+  document.getElementById('aPasswordRow').style.display = (role==='submitter') ? 'none' : '';
+}
+async function addUser(){
+  const email=document.getElementById('aEmail').value.trim().toLowerCase();
+  const name=document.getElementById('aName').value.trim();
+  const role=document.getElementById('aRole').value;
+  const password=document.getElementById('aPassword').value.trim();
+  if(!email||!name){ toast('Enter name and email.'); return; }
+  if(role!=='submitter' && !password){ toast('This role needs a password.'); return; }
+  try{
+    await callScript({action:'addUser', email, name, role, password, actingEmail:CURRENT.email});
+    document.getElementById('aEmail').value='';
+    document.getElementById('aName').value='';
+    document.getElementById('aPassword').value='';
+    toast('Access granted to '+email);
+    renderAdmin();
+  }catch(e){ toast(e.message); }
+}
+async function changeRole(email, role){
+  try{
+    const res=await callScript({action:'changeRole', email, role, actingEmail:CURRENT.email});
+    if(res.needsPassword){
+      const newPass=prompt(email+' now needs a password to sign in — set one now:','');
+      if(newPass && newPass.trim()){
+        await callScript({action:'resetPassword', email, password:newPass.trim(), actingEmail:CURRENT.email});
+        toast('Role updated and password set for '+email+'.');
+      }else{
+        toast('Role updated — '+email+' can\'t sign in until you set a password for them.');
+      }
+    }else{
+      toast('Role updated.');
+    }
+  }catch(e){ toast(e.message); }
+  renderAdmin();
+}
+async function revokeUser(email){
+  if(!confirm('Revoke access for '+email+'?')) return;
+  try{ await callScript({action:'revokeUser', email, actingEmail:CURRENT.email}); toast('Access revoked.'); }
+  catch(e){ toast(e.message); }
+  renderAdmin();
+}
+async function resetPassword(email){
+  const newPass=prompt('New password for '+email+':','');
+  if(newPass===null) return;
+  if(!newPass.trim()){ toast('Password cannot be empty.'); return; }
+  try{ await callScript({action:'resetPassword', email, password:newPass.trim(), actingEmail:CURRENT.email}); toast('Password updated for '+email); }
+  catch(e){ toast(e.message); }
+}
+let ALL_CREATIVES=[]; // cached after each admin load, used by the activity log
+let LOG_STATE={period:'all'};
+
+async function renderAdmin(){
+  document.getElementById('userTableBody').innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--muted);">Loading…</td></tr>`;
+  let users=[], creatives=[];
+  const [usersRes, creativesRes] = await Promise.allSettled([
+    callScript({action:'allUsers'}),
+    callScript({action:'allSubmissions'})
+  ]);
+  if(usersRes.status==='fulfilled') users=usersRes.value.users||[];
+  else toast(usersRes.reason.message);
+  if(creativesRes.status==='fulfilled') creatives=creativesRes.value.creatives||[];
+  ALL_CREATIVES=creatives;
+
+  const totalSubmitted=creatives.length;
+  const totalAssigned=creatives.filter(c=>c.Status==='assigned').length;
+  const totalApproved=creatives.filter(c=>c.Status==='approved').length;
+  const totalRejected=creatives.filter(c=>c.Status==='rejected').length;
+  document.getElementById('cntSubmitted').textContent=totalSubmitted;
+  document.getElementById('cntAssigned').textContent=totalAssigned;
+  document.getElementById('cntApproved').textContent=totalApproved;
+  document.getElementById('cntRejected').textContent=totalRejected;
+
+  document.getElementById('userCountSub').textContent=users.length+' users with access';
+  document.getElementById('userTableBody').innerHTML = users.map(u=>`
+    <tr>
+      <td>${u.Name}</td>
+      <td style="color:var(--muted)">${u.Email}</td>
+      <td><select class="role-select" onchange="changeRole('${u.Email}',this.value)">
+        ${Object.keys(ROLE_META).map(r=>`<option value="${r}" ${r===u.Role?'selected':''}>${ROLE_META[r].label}</option>`).join('')}
+      </select></td>
+      <td>${u.Role!=='submitter'?`<button class="revoke-btn" onclick="resetPassword('${u.Email}')">Reset password</button> `:''}<button class="revoke-btn" onclick="revokeUser('${u.Email}')">Revoke</button></td>
+    </tr>`).join('');
+
+  renderSubApproverPanel(users, creatives);
+
+  const ac=document.getElementById('allSubmissionsList');
+  if(!creatives.length){
+    ac.innerHTML=`<div class="empty"><div class="empty-ico">📭</div><div class="empty-t">No submissions yet</div></div>`;
+  }else{
+    ac.innerHTML=creatives.map(s=>`
+      <div class="sub-card">
+        <div class="sub-top">
+          <div><div class="sub-name">${s.Advertiser}</div><div class="sub-adv">${gf(s,'Creative Type')||'—'}${gf(s,'Creative Format')?' · '+gf(s,'Creative Format'):''} · ${s['Submitted By']}</div></div>
+          ${statusChip(s.Status)}
+        </div>
+        <div class="sub-meta">
+          <span>Submitted ${fmtDate(s['Submitted On'])}</span>
+          ${gf(s,'Assigned To')?`<span>Assigned to ${gf(s,'Assigned To')}</span>`:''}
+          ${s['Reviewed On']?`<span>Reviewed by ${s['Reviewed By']} · ${fmtDate(s['Reviewed On'])}</span>`:''}
+        </div>
+      </div>`).join('');
+  }
+
+  renderLog();
+}
+
+// ── Admin: Sub-approvers overview (who's configured + their current workload) ──
+function renderSubApproverPanel(users, creatives){
+  const subs = users.filter(u=>u.Role==='subapprover');
+  document.getElementById('subApproverCountSub').textContent = subs.length + ' sub-approver' + (subs.length===1?'':'s') + ' configured';
+  const list=document.getElementById('subApproverList');
+  if(!subs.length){
+    list.innerHTML = `<div class="empty"><div class="empty-ico">👥</div><div class="empty-t">No sub-approvers yet — add one above with the Sub-approver role</div></div>`;
+    return;
+  }
+  list.innerHTML = subs.map(u=>{
+    const activeCount = creatives.filter(c=> c.Status==='assigned' && gf(c,'Assigned To Email')===u.Email).length;
+    const doneCount = creatives.filter(c=> gf(c,'Completed By')===u.Email).length;
+    return `
+    <div class="sub-card">
+      <div class="sub-top">
+        <div><div class="sub-name">${u.Name}</div><div class="sub-adv">${u.Email}</div></div>
+        <span class="assigned-tag">${activeCount} active</span>
+      </div>
+      <div class="sub-meta"><span>${doneCount} completed lifetime</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Activity log: derived from Submitted On / Reviewed On on every creative ──
+function buildLogEntries(creatives){
+  const entries=creatives.map(c=>({
+    at: gf(c,'Completed On') || c['Reviewed On'] || c['Submitted On'],
+    advertiser: c.Advertiser,
+    creativeType: gf(c,'Creative Type')||'',
+    creativeFormat: gf(c,'Creative Format')||'',
+    startDate: gf(c,'Campaign Start Date')||'',
+    submittedBy: c['Submitted By']||'',
+    submittedOn: c['Submitted On']||'',
+    status: c.Status==='approved' ? 'Approved' : c.Status==='rejected' ? 'Rejected' : c.Status==='assigned' ? 'Assigned' : 'Submitted',
+    reviewedBy: c['Reviewed By']||'',
+    assignedTo: gf(c,'Assigned To')||'',
+    completedBy: gf(c,'Completed By')||'',
+    lastUpdateOn: gf(c,'Completed On') || c['Reviewed On'] || '',
+    reason: c.Reason||'',
+    checklist: gf(c,'Checklist')||''
+  }));
+  entries.sort((a,b)=> new Date(b.at) - new Date(a.at));
+  return entries;
+}
+function setLogPeriod(p){
+  LOG_STATE.period=p;
+  document.querySelectorAll('.ptab').forEach(b=>b.classList.toggle('active', b.dataset.p===p));
+  document.getElementById('logDate').style.display = (['day','month','year'].includes(p)) ? 'inline-block' : 'none';
+  document.getElementById('logRangeWrap').style.display = (p==='range') ? 'inline-flex' : 'none';
+  renderLog();
+}
+function filterByPeriod(entries){
+  if(LOG_STATE.period==='all') return entries;
+
+  if(LOG_STATE.period==='range'){
+    const fromVal=document.getElementById('logDateFrom').value;
+    const toVal=document.getElementById('logDateTo').value;
+    if(!fromVal && !toVal) return entries;
+    const from = fromVal ? new Date(fromVal+'T00:00:00') : null;
+    const to   = toVal   ? new Date(toVal+'T23:59:59')   : null;
+    return entries.filter(e=>{
+      const d=new Date(e.at);
+      if(isNaN(d)) return false;
+      if(from && d<from) return false;
+      if(to && d>to) return false;
+      return true;
+    });
+  }
+
+  const dateVal=document.getElementById('logDate').value; // yyyy-mm-dd, or '' = use today
+  const ref = dateVal ? new Date(dateVal) : new Date();
+  return entries.filter(e=>{
+    const d=new Date(e.at);
+    if(isNaN(d)) return false;
+    if(LOG_STATE.period==='day')   return d.toDateString()===ref.toDateString();
+    if(LOG_STATE.period==='month') return d.getFullYear()===ref.getFullYear() && d.getMonth()===ref.getMonth();
+    if(LOG_STATE.period==='year')  return d.getFullYear()===ref.getFullYear();
+    return true;
+  });
+}
+function renderLog(){
+  const all=buildLogEntries(ALL_CREATIVES);
+  const filtered=filterByPeriod(all);
+  const tb=document.getElementById('logTableBody'), emptyEl=document.getElementById('logEmpty');
+  if(!filtered.length){
+    tb.innerHTML='';
+    emptyEl.innerHTML=`<div class="empty"><div class="empty-ico">🗒️</div><div class="empty-t">No activity in this period</div></div>`;
+    return;
+  }
+  emptyEl.innerHTML='';
+  tb.innerHTML=filtered.map(e=>`
+    <tr>
+      <td>${e.advertiser}</td>
+      <td style="color:var(--muted)">${e.creativeType||'—'}</td>
+      <td style="color:var(--muted)">${e.creativeFormat||'—'}</td>
+      <td style="color:var(--muted);white-space:nowrap;">${e.startDate||'—'}</td>
+      <td>${e.submittedBy||'—'}</td>
+      <td style="color:var(--muted);white-space:nowrap;">${fmtDate(e.submittedOn)}</td>
+      <td><span class="log-action ${e.status}">${e.status}</span></td>
+      <td>${e.reviewedBy||'—'}</td>
+      <td>${e.assignedTo||'—'}</td>
+      <td>${e.completedBy||'—'}</td>
+      <td style="color:var(--muted);white-space:nowrap;">${e.lastUpdateOn?fmtDate(e.lastUpdateOn):'—'}</td>
+      <td style="color:var(--muted)">${e.reason||'—'}</td>
+      <td>${e.checklist?`<button class="view-details-btn" onclick="viewChecklistReadonly('${e.checklist}')">${checklistSummary(e.checklist)}</button>`:'—'}</td>
+    </tr>`).join('');
+}
+function downloadLogCSV(){
+  const entries=filterByPeriod(buildLogEntries(ALL_CREATIVES));
+  if(!entries.length){ toast('Nothing to download for this period.'); return; }
+  const esc=v=>`"${String(v??'').replace(/"/g,'""')}"`;
+  const headers=['Advertiser','Type','Format','Start Date','Submitted By','Submitted On','Status','Reviewed By','Assigned To','Completed By','Last Update','Reason','Checklist'];
+  const lines=[headers.map(esc).join(',')];
+  entries.forEach(e=>{
+    const chkText = e.checklist ? decodeChecklist(e.checklist).map(d=>d.item+': '+d.answer).join(' | ') : '';
+    lines.push([e.advertiser,e.creativeType,e.creativeFormat,e.startDate,e.submittedBy,e.submittedOn,e.status,e.reviewedBy,e.assignedTo,e.completedBy,e.lastUpdateOn,e.reason,chkText].map(esc).join(','));
+  });
+  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='creative_approval_log_'+LOG_STATE.period+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+</script>
+</body>
+</html>
